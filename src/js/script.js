@@ -1,8 +1,6 @@
 function main() {
   const { gl, meshProgramInfo } = initializeWorld();
-  ///////
   
-  ////////
   const sphereBufferInfo = flattenedPrimitives.createSphereBufferInfo(gl, 10, 12, 6);
   const cubeBufferInfo = flattenedPrimitives.createCubeBufferInfo(gl, 20); //escala aqui!!!
   const coneBufferInfo = flattenedPrimitives.createTruncatedConeBufferInfo(gl, 10, 0, 20, 12, 1, true, false);
@@ -15,34 +13,27 @@ function main() {
   var sphereUniforms = {u_colorMult: [0.5, 1, 0.5, 1],u_matrix: m4.identity(),};
   const coneUniforms = {u_colorMult: [0.5, 0.5, 1, 1],u_matrix: m4.identity(),};
 
-  //function computeMatrix(viewProjectionMatrix, translation, yRotation,xRotation) {
-  function computeMatrix(viewProjectionMatrix, translation,xRotation,yRotation,zRotation,xScale,yScale,zScale,
-    translation_x,translation_y,translation_z){
+  function computeMatrix(viewProjectionMatrix, translation, yRotation,xRotation,xScale,yScale,zScale) {
     var matrix = m4.translate(
       viewProjectionMatrix,
       translation[0],
       translation[1],
       translation[2],
     );
-    matrix = m4.xRotate(matrix,xRotation);
-    matrix = m4.yRotate(matrix,yRotation);
-    matrix = m4.zRotate(matrix,zRotation);
-    matrix = m4.scale(matrix, xScale, yScale, zScale);
-    matrix = m4.translate(matrix, translation_x,translation_y,translation_z);
-    return matrix; 
+  matrix = m4.xRotate(matrix, xRotation);
+  matrix = m4.yRotate(matrix, yRotation);
+  matrix = m4.scale(matrix, xScale, yScale, zScale);
+  return matrix;
   }  
-
-  //////
-  //matrix = m4.xRotate(matrix, xRotation);
-  //return m4.yRotate(matrix, yRotation);
-  //}
-  //////
-
-
+  var then = 0;
   loadGUI();
+  
   function render(time) {
-
     time *= 0.0005;
+
+    var deltaTime = time - then;
+    then = time;
+
     twgl.resizeCanvasToDisplaySize(gl.canvas);
 
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
@@ -62,13 +53,29 @@ function main() {
       var coneYRotation =  time;
     }
     else if(config.AutoRoll == false){
-      var cubeXRotation = config.cubeXRotation;
-      var cubeYRotation = config.cubeYRotation;
-      var sphereXRotation = config.sphereXRotation;
-      var sphereYRotation = config.sphereYRotation;
-      var coneXRotation = config.coneXRotation;
-      var coneYRotation = config.coneYRotation;
+      cubeXRotation = config.cubeXRotation;
+      cubeYRotation = config.cubeYRotation;
+      sphereXRotation = config.sphereXRotation;
+      sphereYRotation = config.sphereYRotation;
+      coneXRotation = config.coneXRotation;
+      coneYRotation = config.coneYRotation;
     } 
+    //// BEZIER e Circulo, n ta bonito, desculpa eu tentei :(
+if(config.bezier == true){
+  var posCub = Bezier(config.bezCub,[config.Bp1x,config.Bp1y],[config.Bp2x,config.Bp2y],[config.Bp3x,config.Bp3y],[config.Bp4x,config.Bp4y]);
+  var cubeTX = posCub[0];
+  var cubeTY = posCub[1];
+}
+else{
+  cubeTX = config.cubeTX;
+  cubeTY = config.cubeTY;
+}
+if(config.circulo == true){
+  cubeTX = Math.sin(degToRad(time*(config.Cvel)))*config.Csize
+  cubeTY = Math.cos(degToRad(time*(config.Cvel)))*config.Csize
+}
+
+if(config.animar == true){ config.AutoRoll = false;animatingObjects(time)}
 
     //mais cameras só muda o local das cameras com um if
     //tempo nas animaçoes!!!!!!
@@ -79,7 +86,7 @@ function main() {
     var viewProjectionMatrix = m4.multiply(projectionMatrix, viewMatrix);
     //como gira a camera em torno dela mesma ????? ja sei
     
-      gl.useProgram(meshProgramInfo.program);
+    gl.useProgram(meshProgramInfo.program);
 
     gl.bindVertexArray(sphereVAO);
 
@@ -87,7 +94,8 @@ function main() {
     viewProjectionMatrix,
     [config.sphereTX,config.sphereTY,config.sphereTZ],
     sphereXRotation,
-    sphereYRotation);
+    sphereYRotation,
+    config.sphereScaleX,config.sphereScaleY,config.sphereScaleZ);
 
     twgl.setUniforms(meshProgramInfo, sphereUniforms); 
     twgl.drawBufferInfo(gl, sphereBufferInfo);
@@ -98,7 +106,8 @@ function main() {
       viewProjectionMatrix,
       [config.coneTX,config.coneTY,config.coneTZ],
       coneXRotation,
-      coneYRotation
+      coneYRotation,
+      config.coneScaleX,config.coneScaleY,config.coneScaleZ
     );
     twgl.setUniforms(meshProgramInfo, coneUniforms); 
     twgl.drawBufferInfo(gl, coneBufferInfo);
@@ -108,9 +117,10 @@ function main() {
     //precisa de mais uma dessas pra ter coisa girando em pontos // animaçoes precisa de n matriz (for)
     cubeUniforms.u_matrix = computeMatrix( ///aqui muda as posiçoes
       viewProjectionMatrix,
-      [config.cubeTX,config.cubeTY,config.cubeTZ], 
-      cubeYRotation,
+      [cubeTX,cubeTY,config.cubeTZ], 
       cubeXRotation,
+      cubeYRotation,
+      config.cubeScaleX,config.cubeScaleY,config.cubeScaleZ
     );
 
     twgl.setUniforms(meshProgramInfo, cubeUniforms);///muda?
@@ -118,7 +128,10 @@ function main() {
     
 	requestAnimationFrame(render);
   }
-
+  
   requestAnimationFrame(render);
 }
 main();
+
+
+//gl.clear(gl.COLOR_BUFFER_BIT); coloca no final pra limpar as coisas /// faz for dps de cube até o fim pra desenhar mais cubos!

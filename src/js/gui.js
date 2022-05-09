@@ -1,19 +1,18 @@
 var config = { 
 cubeYRotation: degToRad(20), cubeXRotation: degToRad(20),cubeTX: 0,cubeTY: 0,cubeTZ:0,cubeScaleX: 1,cubeScaleY: 1,cubeScaleZ: 1, bezCub: degToRad(0), //cubo
-CamtrnsX: 0,CamtrnsY: 0,CamtrnsZ:100, CamPosX: 0, CamPosY: 0, CamPosZ:0, FOV:60, MIN:0.1, MAX: 200, //camera
+CamtrnsX: 0,CamtrnsY: 0,CamtrnsZ:100, CamPosX: 0, CamPosY: 0, CamPosZ:0, FOV:60, MIN:0.1, MAX: 200, bezCam:false,bezCamT:degToRad(0), acompanha: false, //camera
 AutoRoll: true, bezier: false, circulo: false, //rolagem/bezier
 circulo: false,Cvel:500,Csize:10,//circulo 
 sphereYRotation: degToRad(20), sphereXRotation: degToRad(20), sphereTX: -40,sphereTY: 0,sphereTZ: 0,sphereScaleX: 1,sphereScaleY: 1,sphereScaleZ: 1,//esfera
 coneXRotation: degToRad(20), coneYRotation: degToRad(20),coneTX: 40,coneTY: 0,coneTZ: 0,coneScaleX: 1,coneScaleY: 1,coneScaleZ: 1,//cone
-animar:false,
+animar:false, seguir:false,orbita:false,//checkboxes
 Bp1x:-60,Bp1y:-30,Bp2x:-60,Bp2y:30,Bp3x:50,Bp3y:30,Bp4x:50,Bp4y:-30  //possiçoes dos pontos do bezier
 };
 
+var Novocone = { novocone: function(){ cones = cones + 1;}}
+var tiraCone = { tiracone: function(){ cones = cones - 1;}}
+var ResetAnim = { resetanim: function(){ auxDeAnima = 0;}} //seta a var aux de animaçao de volta a zero
 
-var obj = { add:function(){ console.log("clicked") }};
-//var anim = { animaçao: function()};  // { add:function(){ console.log("clicked") }};
-
-//var Novocubo = { novoCubo: function(){ }}
 
 const loadGUI = () => {
   const gui = new dat.GUI();
@@ -28,7 +27,9 @@ const loadGUI = () => {
   camera.add(config, "CamtrnsZ", -200, 200, 0.5).name('AngleZ');
   camera.add(config, "MIN", 0, 200, 0.1).name('MIN');
   camera.add(config, "MAX", -200, 2000, 0.5).name('MAX');
-  camera.add(config, "FOV", -200, 200, 0.5).name('FOV'); //fim camera
+  camera.add(config, "FOV", -200, 200, 0.5).name('FOV');
+  camera.add(config, 'bezCam').name("BezierC")
+  camera.add(config, "bezCamT", 0,1,0.001).name("Curva");//fim camera
 
   const cubo = gui.addFolder("Cubo"); //pasta cubo
   cubo.add(config, "cubeYRotation", 0, 10, 0.5);
@@ -59,27 +60,31 @@ const loadGUI = () => {
   cone.add(config, "coneScaleX", 0, 5, 0.5);
   cone.add(config, "coneScaleY", 0, 5, 0.5);
   cone.add(config, "coneScaleZ", 0, 5, 0.5);//fim cone
- 
-  gui.add(obj,'add');
-  //gui.add(anim,'animaçao');
+  
+  gui.add(Novocone,'novocone'); //check box
+  gui.add(tiraCone,'tiracone');
+  gui.add(ResetAnim,'resetanim').name("Reseta animação");
   gui.add(config, 'AutoRoll') //roll
   gui.add(config, 'animar').name("Animação")
+  gui.add(config, 'orbita').name("Orbitar")
+  gui.add(config, 'seguir').name("Seguir")
+  gui.add(config, 'acompanha').name("Acompanhar")
   gui.add(config, 'bezier').name("Bezier")
 
-  const bezFolder = gui.addFolder("Bezzier")
-  bezFolder.add(config, "bezCub", 0,1,0.001).name("BezierCubo");
-  bezFolder.add(config,"Bp1x",-60,50,0.5).name("BezP1X")
-  bezFolder.add(config,"Bp1y",-60,50,0.5).name("BezP1Y");
-  bezFolder.add(config,"Bp2x",-60,50,0.5).name("BezP2X")
-  bezFolder.add(config,"Bp2y",-60,50,0.5).name("BezP2Y");
-  bezFolder.add(config,"Bp3x",-60,50,0.5).name("BezP3X")
-  bezFolder.add(config,"Bp3y",-60,50,0.5).name("BezP3Y");
-  bezFolder.add(config,"Bp4x",-60,50,0.5).name("BezP4X")
-  bezFolder.add(config,"Bp4y",-60,50,0.5).name("BezP4Y");
+  const bezFolder = gui.addFolder("Bezzier") // pasta bezier
+  bezFolder.add(config, "bezCub", 0,1,0.001).name("BezierCubo"); //distancia na curva, 0 sendo inicio 1 sendo final
+  bezFolder.add(config,"Bp1x",-60,60,0.5).name("BezP1X")
+  bezFolder.add(config,"Bp1y",-60,60,0.5).name("BezP1Y"); //cada ponto pode ser alterado 
+  bezFolder.add(config,"Bp2x",-60,60,0.5).name("BezP2X")
+  bezFolder.add(config,"Bp2y",-60,60,0.5).name("BezP2Y");
+  bezFolder.add(config,"Bp3x",-60,60,0.5).name("BezP3X")
+  bezFolder.add(config,"Bp3y",-60,60,0.5).name("BezP3Y");
+  bezFolder.add(config,"Bp4x",-60,60,0.5).name("BezP4X")
+  bezFolder.add(config,"Bp4y",-60,60,0.5).name("BezP4Y"); //fim pasta bezier
 
-  gui.add(config, 'circulo').name("Circulo")
+  gui.add(config, 'circulo').name("Circulo") //pasta circulo
   const circuloFold = gui.addFolder("Circulo")
   circuloFold.add(config,"Cvel",0,1000,1).name("Velocidade");
-  circuloFold.add(config,"Csize",0,100,1).name("Raio");
+  circuloFold.add(config,"Csize",0,100,1).name("Raio"); //fim circulo
   
 };

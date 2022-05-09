@@ -1,4 +1,4 @@
-function Bezier(t, p1, p2, p3, p4) {
+function Bezier(t, p1, p2, p3, p4) { //muito loko esse bezier, n entendo a matematica mas funciona! kkk
   var invT = (1 - t)
   var px = ((p1[0]) * invT * invT * invT) +
             ((p2[0]) * 3 * t * invT * invT) +
